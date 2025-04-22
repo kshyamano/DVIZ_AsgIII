@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sales Dashboard with Vega-Lite</title>
+  <!-- Vega Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+    }
+    #vis {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Interactive Sales Dashboard</h1>
+  <div id="vis"></div>
+
+  <script type="text/javascript">
+    const spec = {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "vconcat": [
+        {
+          "hconcat": [
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/kshyamano/DVIZ_AsgIII/main/HW_III.csv"
+              },
+              "title": {
+                "text": "1.Total Earnings by Representative",
+                "fontSize": 14
+              },
+              "width": 400,
+              "height": 300,
+              "mark": {"type": "arc", "innerRadius": 50},
+              "encoding": {
+                "theta": {
+                  "aggregate": "sum",
+                  "field": "Total",
+                  "type": "quantitative",
+                  "title": "Total Earnings ($)"
+                },
+                "color": {
+                  "field": "Rep",
+                  "type": "nominal",
+                  "title": "Representative"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/kshyamano/DVIZ_AsgIII/main/HW_III.csv"
+              },
+              "title": {
+                "text": "2.Correlation Between Units and Unit Cost by Item",
+                "fontSize": 14
+              },
+              "width": 400,
+              "height": 300,
+              "params": [{"name": "brush", "select": {"type": "interval"}}],
+              "mark": "point",
+              "encoding": {
+                "x": {"field": "Units", "type": "quantitative", "title": "Units Sold"},
+                "y": {"field": "Unit Cost", "type": "quantitative", "title": "Unit Cost ($)"},
+                "color": {"field": "Item", "type": "nominal", "title": "Item"},
+                "opacity": {
+                  "condition": {"param": "brush", "value": 1},
+                  "value": 0.2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "description": "Streamgraph of Total by Item over Time",
+              "data": {
+                "url": "https://raw.githubusercontent.com/kshyamano/DVIZ_AsgIII/main/HW_III.csv",
+                "format": {"type": "csv"}
+              },
+              "title": {
+                "text": "3. Streamgraph of Total by Item over Time.",
+                "fontSize": 14
+              },
+              "transform": [
+                {
+                  "calculate": "toDate(datum.OrderDate, '%m-%d-%y')",
+                  "as": "ParsedDate"
+                },
+                {
+                  "aggregate": [{"op": "sum", "field": "Total", "as": "Total"}],
+                  "groupby": ["ParsedDate", "Item"]
+                }
+              ],
+              "mark": "area",
+              "encoding": {
+                "x": {"field": "ParsedDate", "type": "temporal", "title": "Date"},
+                "y": {
+                  "field": "Total",
+                  "type": "quantitative",
+                  "stack": "center",
+                  "title": "Total Sales"
+                },
+                "color": {"field": "Item", "type": "nominal", "title": "Item"},
+                "tooltip": [
+                  {"field": "ParsedDate", "type": "temporal"},
+                  {"field": "Item"},
+                  {"field": "Total"}
+                ]
+              }
+            },
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/kshyamano/DVIZ_AsgIII/main/HW_III.csv"
+              },
+              "title": {
+                "text": "4. Histogram of the Units and overlay of the global mean",
+                "fontSize": 14
+              },
+              "layer": [
+                {
+                  "mark": {"type": "bar", "tooltip": true},
+                  "encoding": {
+                    "x": {
+                      "bin": {"maxbins": 30},
+                      "field": "Units",
+                      "type": "quantitative",
+                      "title": "Units"
+                    },
+                    "y": {
+                      "aggregate": "count",
+                      "type": "quantitative",
+                      "title": "Count",
+                      "axis": {"tickMinStep": 1}
+                    }
+                  }
+                },
+                {
+                  "mark": {"type": "rule", "color": "red", "size": 2},
+                  "encoding": {
+                    "x": {
+                      "aggregate": "mean",
+                      "field": "Units",
+                      "type": "quantitative"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "title": {"text": "5(a). Distribution of Total Sales by Region", "fontSize": 14},
+              "data": {
+                "url": "https://raw.githubusercontent.com/kshyamano/DVIZ_AsgIII/main/HW_III.csv"
+              },
+              "transform": [
+                {
+                  "density": "Total",
+                  "groupby": ["Region"],
+                  "extent": [0, 2500],
+                  "steps": 100
+                }
+              ],
+              "mark": "area",
+              "width": 400,
+              "height": 300,
+              "encoding": {
+                "x": {"field": "value", "type": "quantitative", "title": "Total Sales ($)"},
+                "y": {
+                  "field": "density",
+                  "type": "quantitative",
+                  "stack": "center",
+                  "title": "Density"
+                },
+                "color": {"field": "Region", "type": "nominal", "legend": null},
+                "opacity": {"value": 0.6},
+                "facet": {
+                  "field": "Region",
+                  "type": "nominal",
+                  "columns": 3,
+                  "title": "Region"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "title": {"text": "5(b)[i] Total Sales by Region and Item", "fontSize": 14},
+              "data": {
+                "url": "https://raw.githubusercontent.com/kshyamano/DVIZ_AsgIII/main/HW_III.csv"
+              },
+              "mark": {"type": "rect"},
+              "width": 400,
+              "height": 300,
+              "encoding": {
+                "x": {
+                  "field": "Region",
+                  "type": "nominal",
+                  "axis": {"labelAngle": 0, "labelFontSize": 14, "titleFontSize": 16}
+                },
+                "y": {
+                  "field": "Item",
+                  "type": "nominal",
+                  "axis": {"labelFontSize": 14, "titleFontSize": 16}
+                },
+                "color": {
+                  "aggregate": "sum",
+                  "field": "Total",
+                  "type": "quantitative",
+                  "title": "Total Sales ($)",
+                  "scale": {"scheme": "turbo"}
+                },
+                "tooltip": [
+                  {"field": "Region", "type": "nominal"},
+                  {"field": "Item", "type": "nominal"},
+                  {
+                    "aggregate": "sum",
+                    "field": "Total",
+                    "type": "quantitative",
+                    "title": "Total Sales"
+                  }
+                ]
+              },
+              "config": {"view": {"stroke": "transparent"}}
+            }
+          ]
+        },
+        {
+          "hconcat": [
+            {
+              "data": {
+                "url": "https://raw.githubusercontent.com/kshyamano/DVIZ_AsgIII/main/HW_III.csv"
+              },
+              "title": {"text": "5(b)[ii]. Item Frequency by Region and Year", "fontSize": 14},
+              "width": 200,
+              "height": 200,
+              "transform": [
+                {"timeUnit": "year", "field": "OrderDate", "as": "Year"}
+              ],
+              "mark": "rect",
+              "encoding": {
+                "x": {"field": "Region", "type": "nominal", "title": "Region"},
+                "y": {"field": "Item", "type": "nominal", "title": "Item"},
+                "color": {
+                  "aggregate": "count",
+                  "type": "quantitative",
+                  "title": "Number of Transactions",
+                  "scale": {"scheme": "blues"}
+                },
+                "facet": {
+                  "field": "Year",
+                  "type": "nominal",
+                  "title": "Year",
+                  "columns": 2
+                }
+              }
+            }
+          ]
+        }
+      ]
+    };
+
+    vegaEmbed("#vis", spec);
+  </script>
+</body>
+</html>
